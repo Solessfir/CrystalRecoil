@@ -3,17 +3,29 @@
 #include "Components/CRRecoilSpreadComponent.h"
 #include "Engine/World.h"
 
+namespace
+{
+    bool HasRuntimeCurveData(const FRuntimeFloatCurve& RuntimeCurve)
+    {
+        const FRichCurve* RichCurve = RuntimeCurve.GetRichCurveConst();
+        return RichCurve && RichCurve->HasAnyData();
+    }
+}
+
 void UCRRecoilSpreadComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    if (ReadyToCalculateRecoil() && LastFireTime + RecoilHeatCooldownDelay < GetWorld()->GetTimeSeconds())
+    const UWorld* World = GetWorld();
+    const bool bCanProcessHeat = ReadyToCalculateRecoil();
+    if (World && bCanProcessHeat && LastFireTime + RecoilHeatCooldownDelay < World->GetTimeSeconds())
     {
         DoHeatCooldown(DeltaTime);
     }
 
     // Keeps ticking if heat still needs cooldown or base recoil is still active
-    const bool bHasPendingRecoilWork = !FMath::IsNearlyZero(CurrentRecoilHeat) || !RecoilToApply.IsNearlyZero() || !RecoilToRecover.IsNearlyZero(0.001);
+    const bool bHasPendingHeatWork = bCanProcessHeat && !FMath::IsNearlyZero(CurrentRecoilHeat);
+    const bool bHasPendingRecoilWork = bHasPendingHeatWork || !RecoilToApply.IsNearlyZero() || !RecoilToRecover.IsNearlyZero(0.001);
     SetComponentTickEnabled(bHasPendingRecoilWork);
 }
 
@@ -58,7 +70,7 @@ void UCRRecoilSpreadComponent::SetRecoilHeatCoolDownDelay(const float InDelay)
 
 float UCRRecoilSpreadComponent::GetCurrentSpreadAngle() const
 {
-    if (!ensureMsgf(HeatToSpreadAngleCurve.GetRichCurveConst(), TEXT("HeatToSpreadAngleCurve is not set")))
+    if (!ensureMsgf(ReadyToCalculateRecoil(), TEXT("All recoil spread curves must contain data")))
     {
         return 0.f;
     }
@@ -67,7 +79,7 @@ float UCRRecoilSpreadComponent::GetCurrentSpreadAngle() const
 
 void UCRRecoilSpreadComponent::DoHeatCooldown(const float DeltaTime)
 {
-    if (!ensureMsgf(HeatToCooldownPerSecondCurve.GetRichCurveConst(), TEXT("HeatToCooldownPerSecondCurve is not set")))
+    if (!ensureMsgf(HasRuntimeCurveData(HeatToCooldownPerSecondCurve), TEXT("HeatToCooldownPerSecondCurve does not contain data")))
     {
         return;
     }
@@ -77,5 +89,5 @@ void UCRRecoilSpreadComponent::DoHeatCooldown(const float DeltaTime)
 
 bool UCRRecoilSpreadComponent::ReadyToCalculateRecoil() const
 {
-    return ShotToHeatCurve.GetRichCurveConst() && HeatToSpreadAngleCurve.GetRichCurveConst() && HeatToCooldownPerSecondCurve.GetRichCurveConst();
+    return HasRuntimeCurveData(ShotToHeatCurve) && HasRuntimeCurveData(HeatToSpreadAngleCurve) && HasRuntimeCurveData(HeatToCooldownPerSecondCurve);
 }

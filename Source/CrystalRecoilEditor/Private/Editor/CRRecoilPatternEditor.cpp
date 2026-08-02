@@ -5,6 +5,7 @@
 #include "Data/CRRecoilUnitGraph.h"
 #include "Editor/CRRecoilPatternEditorCommands.h"
 #include "IStructureDetailsView.h"
+#include "ScopedTransaction.h"
 #include "Widget/CRRecoilUnitGraphEditor.h"
 
 void FCRRecoilUnitSelection::AddSelection(const int32 UnitID)
@@ -585,8 +586,9 @@ void FCRRecoilPatternEditor::OnSelectionChanged() const
 					return;
 				}
 
+				UCRRecoilUnitGraph* RecoilUnitGraph = GetRecoilUnitGraph();
 				const int32 CurrentUnitID = RecoilUnitSelection.GetSelection()[0];
-				FCRRecoilUnit* ActualUnit = GetRecoilUnitGraph()->GetUnitByID(CurrentUnitID);
+				FCRRecoilUnit* ActualUnit = RecoilUnitGraph->GetUnitByID(CurrentUnitID);
 				if (!ActualUnit)
 				{
 					return;
@@ -594,7 +596,16 @@ void FCRRecoilPatternEditor::OnSelectionChanged() const
 
 				// Write edited copy back into the actual array
 				const FCRRecoilUnit* EditedUnit = reinterpret_cast<const FCRRecoilUnit*>(SelectedUnitScope->GetStructMemory());
+				FScopedTransaction Transaction(NSLOCTEXT("CRRecoilPatternEditor", "EditRecoilUnit", "Edit Recoil Unit"));
+				RecoilUnitGraph->Modify();
 				*ActualUnit = *EditedUnit;
+
+				if (bEnableAutoRearrangeUnits)
+				{
+					RecoilUnitGraph->RearrangeUnits();
+				}
+
+				RecoilUnitGraph->MarkPackageDirty();
 			});
 
 			UnitDetailsWidget->SetStructureData(SelectedUnitScope);

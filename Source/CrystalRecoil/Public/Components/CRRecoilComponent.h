@@ -60,6 +60,7 @@ public:
 
 protected:
 	virtual void ApplyInputToController(AController* InTargetController, const FRotator& Input);
+	FRotator ApplyInputToControllerAndMeasure(AController* InTargetController, const FRotator& Input);
 
 	/**
 	* Called before each recoil delta is applied to the controller.

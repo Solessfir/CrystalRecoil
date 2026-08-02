@@ -28,6 +28,7 @@ class CRYSTALRECOIL_API UCRRecoilSpreadComponent : public UCRRecoilComponent
 
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void ApplyShot() override;
 
 	/**
 	* Call before each shot to get the current spread angle for projectile direction calculation
@@ -71,8 +72,6 @@ public:
 	FCRSpreadRecoilHeatChangedDelegate OnHeatChanged;
 
 protected:
-	virtual void ApplyShot() override;
-
 	void SetRecoilHeat(const float InHeat);
 
 	void DoHeatCooldown(const float DeltaTime);
