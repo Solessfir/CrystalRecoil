@@ -15,12 +15,14 @@ UCRRecoilUnitGraph* UCRRecoilPattern::GetUnitGraph() const
 
 FVector2f UCRRecoilPattern::ConsumeShot(int32& ShotIndex) const
 {
-	if (RecoilUnitGraph->GetUnitCount() == 0)
+	if (!RecoilUnitGraph || RecoilUnitGraph->GetUnitCount() == 0)
 	{
 		return FVector2f::ZeroVector;
 	}
 
-	if (ShotIndex >= GetMaxShotIndex())
+	ShotIndex = FMath::Max(0, ShotIndex);
+
+	if (ShotIndex >= RecoilUnitGraph->GetUnitCount())
 	{
 		switch (PatternEndBehavior)
 		{
